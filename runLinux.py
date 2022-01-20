@@ -64,7 +64,7 @@ pyautogui.press('enter')
 
 # Locate and click the extensions icon
 pause(3)
-extensions_button = "/home/vagrant/memdump-tests/icons/Extensions_Icon.png"
+extensions_button = "/home/vagrant/passcert/memdump-tests/icons/Extensions_Icon.png"
 if not pyautogui.locateOnScreen(extensions_button, confidence=0.9):
     print("ERROR: Extensions button not found!")
 
