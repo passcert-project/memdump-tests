@@ -22,6 +22,7 @@ If the dependencies above are satisfied, follow these steps:
  2. At the root of your repository's copy, type:
 
     ```
+    cd vagrant-box
     vagrant up
     ```
 
