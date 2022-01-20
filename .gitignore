@@ -43,4 +43,4 @@ pydevd*.log
 nodeLanguageServer/**
 nodeLanguageServer.*/**
 dist/**
-.vscode/launch.json
+**/launch.json
