@@ -53,10 +53,10 @@ pyautogui.press('enter')
 
 time.sleep(time_to_sleep + 3)
 #2 - Locate the bitwarden app on the chrome tray
-bitwardenButtonTrayLocation = pyautogui.locateOnScreen('Icons/BitWarden Task Icon.png', confidence=0.9)
+bitwardenButtonTrayLocation = pyautogui.locateOnScreen('icons/BitWarden Task Icon.png', confidence=0.9)
 
 print ('Button coords: x:', bitwardenButtonTrayLocation.left, ' y:', bitwardenButtonTrayLocation.top)
-pyautogui.click('Icons/BitWarden Task Icon.png')
+pyautogui.click('icons/BitWarden Task Icon.png')
 
 #Iniciar sessão
 time.sleep(time_to_sleep)
@@ -74,7 +74,7 @@ pyautogui.press('enter')
 #Click the settings button
 #NOTE: It's better to keep the locate button for now since there could be multiple entries
 time.sleep(time_to_sleep + 1)
-pyautogui.click('Icons/Options.png')
+pyautogui.click('icons/Options.png')
 
 #Terminate session button
 time.sleep(time_to_sleep)

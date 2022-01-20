@@ -21,7 +21,7 @@ Vagrant.configure("2") do |config|
   config.vm.provision :shell, inline: "sudo apt upgrade -y"
 
   # Add desktop environment
-  config.vm.provision :shell, inline: "sudo apt install -y --no-install-recommends ubuntu-desktop"
+  config.vm.provision :shell, inline: "sudo apt install -y --no-install-recommends ubuntu-desktop fonts-ubuntu"
   config.vm.provision :shell, inline: "sudo apt install -y --no-install-recommends virtualbox-guest-dkms virtualbox-guest-utils virtualbox-guest-x11"
   # Add `vagrant` to Administrator
   config.vm.provision :shell, inline: "sudo usermod -a -G sudo vagrant"
@@ -39,6 +39,16 @@ Vagrant.configure("2") do |config|
 
   # Create PassCert directory and install bitwarden extension (v1.55.0, 8 Dec 2021)
   config.vm.provision :shell, inline: "sudo su - vagrant; cd /home/vagrant; mkdir passcert; cd passcert; git clone https://github.com/bitwarden/browser.git --branch v1.55.0 bw-browser-v1.55; cd bw-browser-v1.55; npm install; npm run build"
+  # Clone the memdump-tests repo
+  config.vm.provision :shell, inline: "cd /home/vagrant/passcert; git clone https://github.com/passcert-project/memdump-tests"
+
+  # Change permission of new folders
+  config.vm.provision :shell, inline: "sudo chown -R vagrant.vagrant /home/vagrant"
+
+  # Install python3-pip, pyautogui, and required packages
+  config.vm.provision :shell, inline: "sudo apt install -y --no-install-recommends python3-pip python3-tk python3-dev scrot python3-opencv"
+  config.vm.provision :shell, inline: "sudo pip install pyautogui"
+
   # Install gdb
   config.vm.provision :shell, inline: "sudo apt install -y --no-install-recommends gdb"
 
