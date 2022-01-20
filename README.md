@@ -33,7 +33,7 @@ If the dependencies above are satisfied, follow these steps:
     - **Login:** vagrant
     - **Password:** vagrant
 
- 4. Open a new terminal in the virtual machine. You can do this by pressing `ALT+F2` and writing the command `gnome-terminal`.
+ 4. Open a new terminal in the virtual machine. You can do this by pressing `ALT+F2` and writing the command `gnome-terminal`. Alternatively, you can right-click in the desktop and select the option _Open in Terminal_.
 
  5. From the terminal, run the following command:
 
