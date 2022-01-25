@@ -3,6 +3,7 @@ import time
 import sys
 import os
 import psutil
+import re
 
 '''
 Before typing MP
@@ -46,6 +47,30 @@ TODO: General
 def pause(secs_to_pause=1):
     time.sleep(secs_to_pause)
 
+def memdump(pid, iteration):
+    # maps contains the mapping of memory of a specific project
+    map_file = f"/proc/{pid}/maps"
+    mem_file = f"/proc/{pid}/mem"
+
+    # output file
+    out_file = f'{pid}-{iteration}.dump'
+
+    # iterate over regions
+    with open(map_file, 'r') as map_f, open(mem_file, 'rb', 0) as mem_f, open(out_file, 'wb') as out_f:
+        for line in map_f.readlines():  # for each mapped region
+            m = re.match(r'([0-9A-Fa-f]+)-([0-9A-Fa-f]+) ([-r])', line)
+            if m.group(3) == 'r':  # readable region
+                start = int(m.group(1), 16)
+                end = int(m.group(2), 16)
+                mem_f.seek(start)  # seek to region start
+                #print(hex(start), '-', hex(end))
+                try:
+                    chunk = mem_f.read(end - start)  # read region contents
+                    out_f.write(chunk)  # dump contents to standard output
+                except OSError:
+                    print(hex(start), '-', hex(end), '[error,skipped]', file=sys.stderr)
+                    continue
+    print(f'Memory dump saved to {out_file}')
 
 # Obtain monitor size
 monitor_size = pyautogui.size()
@@ -89,6 +114,16 @@ pyautogui.press('enter')
 pause(1)
 pyautogui.press('tab')
 pyautogui.press('enter')
+
+# Enter email address and password
+pause(1)
+pyautogui.write("test@testemail.com")
+pyautogui.press('tab')
+secret_password = 'thisisatest456231'
+pyautogui.write(secret_password)
+
+# First memdump
+memdump(pid, '0-before-login')
 
 # Close chrome
 pause(2)
