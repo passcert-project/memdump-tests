@@ -2,6 +2,7 @@ import pyautogui
 import time
 import sys
 import os
+import psutil
 
 '''
 Before typing MP
@@ -69,6 +70,14 @@ if not pyautogui.locateOnScreen(extensions_button, confidence=0.9):
     sys.exit("ERROR: Extensions button not found!")
 
 pyautogui.click(extensions_button)
+
+# Get PID of Bitwarden browser extension
+chrome_extensions = [proc for proc in psutil.process_iter() if proc.name() == 'chrome' and ('--extension-process' in proc.cmdline())]
+if len(chrome_extensions) != 1:
+    sys.exit("ERROR: Could not get PID of Bitwarden Chrome extension")
+
+pid = chrome_extensions[0].pid
+print(f"PID of Bitwarden Chrome extension: {pid}")
 
 # Select and click the bitwarden extension
 pause(1)
