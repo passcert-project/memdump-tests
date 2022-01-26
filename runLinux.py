@@ -95,6 +95,7 @@ if not pyautogui.locateOnScreen(extensions_button, confidence=0.9):
     sys.exit("ERROR: Extensions button not found!")
 
 pyautogui.click(extensions_button)
+pause(2)
 
 # Get PID of Bitwarden browser extension
 chrome_extensions = [proc for proc in psutil.process_iter() if proc.name() == 'chrome' and ('--extension-process' in proc.cmdline())]
