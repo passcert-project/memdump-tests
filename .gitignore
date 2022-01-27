@@ -43,4 +43,6 @@ pydevd*.log
 nodeLanguageServer/**
 nodeLanguageServer.*/**
 dist/**
-**/launch.json
+
+
+config.ini
