@@ -39,12 +39,12 @@ If the dependencies above are satisfied, follow these steps:
    ```
    cd  /home/vagrant/passcert/memdump-tests/
    ```
-   5.1. Edit the sampleconfig.ini file with the following information:
-      - E-mail address of the BitWarden account
-      - Password of the BitWarden account
-   5.2. Rename the file to "config.ini" (without quotation marks)
+ 6. Edit the sampleconfig.ini file with the following information:
+   - E-mail address of the BitWarden account
+   - Password of the BitWarden account
+ 7. Rename the file to "config.ini" (without quotation marks)
 
- 6. From the terminal, run the following command:
+ 8. From the terminal, run the following command:
 
      ```
      mkdir /home/vagrant/passcert/memdump-tests/memdumps
