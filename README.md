@@ -36,8 +36,19 @@ If the dependencies above are satisfied, follow these steps:
  4. Open a new terminal in the virtual machine. You can do this by pressing `ALT+F2` and writing the command `gnome-terminal`. Alternatively, you can right-click in the desktop and select the option _Open in Terminal_.
 
  5. From the terminal, run the following command:
+   ```
+   cd  /home/vagrant/passcert/memdump-tests/
+   ```
+   1. Edit the sampleconfig.ini file with the following information:
+      - E-mail address of the BitWarden account
+      - Password of the BitWarden account
+   2. Rename the file to "config.ini" (without quotation marks)
+
+ 6. From the terminal, run the following command:
 
      ```
+     mkdir /home/vagrant/passcert/memdump-tests/memdumps
+     cd /home/vagrant/passcert/memdump-tests/memdumps
      python3 /home/vagrant/passcert/memdump-tests/runLinux.py
      ```
 
