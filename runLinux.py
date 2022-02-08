@@ -32,6 +32,7 @@ TODO:
 '''
 
 #region Global Variables
+
 #Stages of mem dumps
 MEMDUMP_BEFORE_TYPING = '0-before-typing-MP'
 MEMDUMP_MID_TYPING_MP = '1-mid-typing-MP'
@@ -44,6 +45,7 @@ COMMAND_PROMPT = "/home/vagrant/passcert/memdump-tests/icons/Command_Prompt.png"
 EXTENSIONS_BUTTON = "/home/vagrant/passcert/memdump-tests/icons/Extensions_Icon.png"
 E_MAIL_PROMPT_BLINK = "/home/vagrant/passcert/memdump-tests/icons/E-mail_prompt_blink.png"
 E_MAIL_PROMPT_NO_BLINK = "/home/vagrant/passcert/memdump-tests/icons/E-mail_prompt_no_blink.png"
+E_MAIL_TEXT = "/home/vagrant/passcert/memdump-tests/icons/E-mail_text.png"
 OPTIONS_BUTTON = "/home/vagrant/passcert/memdump-tests/icons/Options.png"
 #endregion
 
@@ -102,10 +104,12 @@ def findAndClick(imageFile, delayBeforeClicking=0):
         return False
 
 def waitForImage(imageFile, addedDelay=0):
-    while not findImage(imageFile):
+
+    while not (location := findImage(imageFile)):
         logging.info("Waiting for image %s. Pausing for 1 second and rechecking...", imageFile)
         pause()
     pause(addedDelay)
+    return location
 
 def waitForImageAndClick(imageFile, delayBeforeClicking=0):
     while not findAndClick(imageFile, delayBeforeClicking):
@@ -163,16 +167,18 @@ pyautogui.press('tab')
 pyautogui.press('enter')
 
 #E-mail
-#NOTE: So we check if either the non-blinking image or the blink image is there. If not, an e-mail is probably there already
-#   I don't know if there could be a situation where the first findImage goes off when it's not blinking and by the time the second findImage runs, the cursor could blink
-#   Probably not a problem
+#TODO: Instead of looking for an image, just double click the e-mail address part, delete it and then type in the e-mail
+#If there's no e-mail then nothing happens, if there is an e-mail then it's automatically deleted and pasted again which doesn't really matter for our purposes
+#Consistency. How? Find the e-mail address part and move a few pixels below probably or do some math based on the size of the screen
+pause(3)
+email_text = waitForImage(E_MAIL_TEXT)
+pyautogui.click(email_text.left, email_text.top + 10)
+pyautogui.hotkey('ctrl', 'a')
 
-#TODO: Problem area, if pause if too short and there's no email, the following check fails
-pause(2)
-if findImage(E_MAIL_PROMPT_BLINK) != None or findImage(E_MAIL_PROMPT_NO_BLINK) != None:
-    #E-mail prompt is empty, type the e-mail address
-    pyautogui.write(configFile['DEFAULT']['username'])
-    pyautogui.press('tab')
+#Type the e-mail address and replace the old one if there was
+pause()
+pyautogui.write(configFile['DEFAULT']['username'])
+pyautogui.press('tab')
 
 #Perform first memory dump (control mem dump)
 memdump(pid, MEMDUMP_BEFORE_TYPING)
