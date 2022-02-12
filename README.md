@@ -42,6 +42,7 @@ If the dependencies above are satisfied, follow these steps:
  6. Edit the sampleconfig.ini file with the following information:
    - E-mail address of the BitWarden account
    - Password of the BitWarden account
+   - The desired amount of tests to be performed under "numberOfTests" (default is 5 tests).
  7. Rename the file to "config.ini" (without quotation marks)
 
  8. From the terminal, run the following command:
