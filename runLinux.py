@@ -218,8 +218,7 @@ monitor_size = pyautogui.size()
 
 #Config file
 configFile = configparser.ConfigParser()
-#configFile.read('/home/vagrant/passcert/memdump-tests/config.ini')
-configFile.read('/vagrant/config.ini')
+configFile.read('/home/vagrant/passcert/memdump-tests/config.ini')
 
 if not configFile.defaults():
     sys.exit("ERROR: Please follow the instructions in the sampleconfig.ini before starting the tests")
