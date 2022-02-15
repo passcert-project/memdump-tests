@@ -38,6 +38,7 @@ MEMDUMP_BEFORE_TYPING = '0-before-typing-MP'
 MEMDUMP_MID_TYPING_MP = '1-mid-typing-MP'
 MEMDUMP_FINISH_TYPING_MP = '2-finish-typing-NP'
 MEMDUMP_ON_UNLOCK = '3-on-unlock'
+MEMDUMP_ON_TASK_FINISHED = '4-on-task-finished'
 MEMDUMP_SESSION_TERMINATED = '5-session-terminated'
 
 #File locations for the Icons
@@ -46,6 +47,7 @@ EXTENSIONS_BUTTON = "/home/vagrant/passcert/memdump-tests/icons/Extensions_Icon.
 E_MAIL_PROMPT_BLINK = "/home/vagrant/passcert/memdump-tests/icons/E-mail_prompt_blink.png"
 E_MAIL_PROMPT_NO_BLINK = "/home/vagrant/passcert/memdump-tests/icons/E-mail_prompt_no_blink.png"
 E_MAIL_TEXT = "/home/vagrant/passcert/memdump-tests/icons/E-mail_text.png"
+PLAY_BUTTON = "/home/vagrant/passcert/memdump-tests/icons/Play_button.png"
 OPTIONS_BUTTON = "/home/vagrant/passcert/memdump-tests/icons/Options.png"
 #endregion
 
@@ -118,6 +120,8 @@ def waitForImageAndClick(imageFile, delayBeforeClicking=0):
 #endregion
 
 def performTest(googleChromeCmd, nthTest):
+    logging.info("Starting test %d.", nthTest)
+
     # Open chrome with the defined command
     pyautogui.hotkey('alt', 'f2')
     waitForImage(COMMAND_PROMPT, 1)
@@ -189,7 +193,26 @@ def performTest(googleChromeCmd, nthTest):
     pause(1)
 
     #TODO: Simulate task
+    #https://player.vimeo.com/video/559391219
+    pyautogui.hotkey('ctrl', 't')
+    pause(2)
+    pyautogui.write('https://player.vimeo.com/video/559391219')
+    pyautogui.press('enter')
+    waitForImageAndClick(PLAY_BUTTON, 1)
+    logging.info('Playing video for 60 seconds.')
 
+    Task_time = 60
+    pause(Task_time)
+
+    logging.info('Simulation of task ended.')
+    memdump(pid, nthTest, MEMDUMP_ON_TASK_FINISHED)
+
+    # Locate and click the extensions icon
+    waitForImageAndClick(EXTENSIONS_BUTTON, 3)
+    pause(1)
+    pyautogui.press('tab')
+    pyautogui.press('tab')
+    pyautogui.press('enter')
 
     #Click the settings button
     #NOTE: It's better to keep the locate button since there could be multiple entries in the password vault
@@ -235,6 +258,7 @@ logging.info("Perfoming %d tests.", numberOfTests)
 
 for i in range(numberOfTests):
     performTest(cmd, i)
+    logging.info("Percentage of tests completed: %f%%.", i / numberOfTests * 100)
 
 # Print final message
 logging.info("ALL TESTS DONE.")
