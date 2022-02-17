@@ -30,6 +30,9 @@ TODO:
     - Code refactoring (make the script easier to read/go through)
     - Continue to use waitForImage for other problem areas that might manifest
     - Document new functions
+    - Switch extensions (git pull, compiliing)
+    - Results/name of extensions
+    - Config (put a directory for the results)
 '''
 
 #region Global Variables
@@ -43,12 +46,16 @@ MEMDUMP_SESSION_TERMINATED = '5-session-terminated'
 
 #File locations for the Icons
 COMMAND_PROMPT = "/home/vagrant/passcert/memdump-tests/icons/Command_Prompt.png"
+BITWARDEN_PAGE_ICON = "/home/vagrant/passcert/memdump-tests/icons/BitWarden_Page_Icon.png"
 EXTENSIONS_BUTTON = "/home/vagrant/passcert/memdump-tests/icons/Extensions_Icon.png"
-E_MAIL_PROMPT_BLINK = "/home/vagrant/passcert/memdump-tests/icons/E-mail_prompt_blink.png"
-E_MAIL_PROMPT_NO_BLINK = "/home/vagrant/passcert/memdump-tests/icons/E-mail_prompt_no_blink.png"
-E_MAIL_TEXT = "/home/vagrant/passcert/memdump-tests/icons/E-mail_text.png"
-PLAY_BUTTON = "/home/vagrant/passcert/memdump-tests/icons/Play_button.png"
+BITWARDEN_BUTTON = "/home/vagrant/passcert/memdump-tests/icons/BitWarden_Icon.png"
+LOGIN_BUTTON = "/home/vagrant/passcert/memdump-tests/icons/Log_In_Button.png"
+E_MAIL_TEXT = "/home/vagrant/passcert/memdump-tests/icons/E-mail_Text.png"
+GOOGLE = "/home/vagrant/passcert/memdump-tests/icons/Google.png"
+PLAY_BUTTON = "/home/vagrant/passcert/memdump-tests/icons/Play_Button.png"
+BITWARDEN_BLUE_BUTTON = "/home/vagrant/passcert/memdump-tests/icons/BitWarden_Icon_Logged_In.png"
 OPTIONS_BUTTON = "/home/vagrant/passcert/memdump-tests/icons/Options.png"
+YES_BUTTON = "/home/vagrant/passcert/memdump-tests/icons/Yes_Button.png"
 #endregion
 
 #region Functions
@@ -130,8 +137,17 @@ def performTest(googleChromeCmd, nthTest):
     pause(1)
     pyautogui.press('enter')
 
+    #Wait for the BitWarden tab to open
+    waitForImage(BITWARDEN_PAGE_ICON)
+
     # Locate and click the extensions icon
-    waitForImageAndClick(EXTENSIONS_BUTTON, 3)
+    waitForImageAndClick(EXTENSIONS_BUTTON)
+
+    # Select and click the bitwarden extension
+    waitForImageAndClick(BITWARDEN_BUTTON)
+
+    # Select and click Login
+    waitForImageAndClick(LOGIN_BUTTON)
 
     # Get PID of Bitwarden browser extension
     chrome_extensions = [proc for proc in psutil.process_iter() if proc.name() == 'chrome' and ('--extension-process' in proc.cmdline())]
@@ -141,22 +157,8 @@ def performTest(googleChromeCmd, nthTest):
     pid = chrome_extensions[0].pid
     logging.info('PID of Bitwarden Chrome extension: %d', pid)
 
-    # Select and click the bitwarden extension
-    pause(1)
-    pyautogui.press('tab')
-    pyautogui.press('tab')
-    pyautogui.press('enter')
-
-    # Select and click Login
-    pause(4)
-    pyautogui.press('tab')
-    pyautogui.press('enter')
-
     #E-mail
-    #TODO: Instead of looking for an image, just double click the e-mail address part, delete it and then type in the e-mail
-    #If there's no e-mail then nothing happens, if there is an e-mail then it's automatically deleted and pasted again which doesn't really matter for our purposes
-    #Consistency. How? Find the e-mail address part and move a few pixels below probably or do some math based on the size of the screen
-    pause(3)
+    #TODO: This works but check if there's issues depending on screen size
     email_text = waitForImage(E_MAIL_TEXT)
     pyautogui.click(email_text.left, email_text.top + 10)
     pyautogui.hotkey('ctrl', 'a')
@@ -168,7 +170,7 @@ def performTest(googleChromeCmd, nthTest):
 
     #Perform first memory dump (control mem dump)
     memdump(pid, nthTest, MEMDUMP_BEFORE_TYPING)
-    pause(1)
+    pause()
 
     #Password details
     secret_password = configFile['DEFAULT']['password']
@@ -187,16 +189,16 @@ def performTest(googleChromeCmd, nthTest):
     pyautogui.press('tab', presses=4, interval=0.15)
     pyautogui.press('enter')
 
-    pause(3)
-    #Perform memdump after a bit (let the vault open)
+    #Perform memdump after the vault opens (Check when the options button is up)
+    waitForImage(OPTIONS_BUTTON)
     memdump(pid, nthTest, MEMDUMP_ON_UNLOCK)
     pause(1)
 
-    #TODO: Simulate task
-    #https://player.vimeo.com/video/559391219
+    #Simulate task
+    #https://player.vimeo.com/video/604015327
     pyautogui.hotkey('ctrl', 't')
-    pause(2)
-    pyautogui.write('https://player.vimeo.com/video/559391219')
+    waitForImage(GOOGLE)
+    pyautogui.write('https://player.vimeo.com/video/604015327')
     pyautogui.press('enter')
     waitForImageAndClick(PLAY_BUTTON, 1)
     logging.info('Playing video for 60 seconds.')
@@ -208,22 +210,21 @@ def performTest(googleChromeCmd, nthTest):
     memdump(pid, nthTest, MEMDUMP_ON_TASK_FINISHED)
 
     # Locate and click the extensions icon
-    waitForImageAndClick(EXTENSIONS_BUTTON, 3)
-    pause(1)
-    pyautogui.press('tab')
-    pyautogui.press('tab')
-    pyautogui.press('enter')
+    waitForImageAndClick(EXTENSIONS_BUTTON)
+    
+    #Click the (now blue because we're logged in) BitWarden Button
+    waitForImageAndClick(BITWARDEN_BLUE_BUTTON)
 
     #Click the settings button
     #NOTE: It's better to keep the locate button since there could be multiple entries in the password vault
     waitForImageAndClick(OPTIONS_BUTTON)
     #Terminate session button
-    pause(1)
+    pause(3)
     pyautogui.press('tab', presses=14, interval=0.15)
     pyautogui.press('enter')
 
     #And terminate session
-    pyautogui.press('enter')
+    waitForImageAndClick(YES_BUTTON)
 
     #Mem-dump after exiting the session
     memdump(pid, nthTest, MEMDUMP_SESSION_TERMINATED)
