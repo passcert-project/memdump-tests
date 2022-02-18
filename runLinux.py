@@ -61,13 +61,15 @@ YES_BUTTON = "/home/vagrant/passcert/memdump-tests/icons/Yes_Button.png"
 def pause(secs_to_pause=1):
     time.sleep(secs_to_pause)
 
-def memdump(pid, nthTest, iteration):
+def memdump(pid, nthTest, iteration, dumpSaveLocation):
     # maps contains the mapping of memory of a specific project
     map_file = f"/proc/{pid}/maps"
     mem_file = f"/proc/{pid}/mem"
 
     # output file
-    out_file = f'{nthTest}-{iteration}.dump'
+    out_file = os.path.join(dumpSaveLocation, f'{nthTest}-{iteration}.dump')
+    #Make sure the directory exists, and if not create it
+    os.makedirs(os.path.normpath(dumpSaveLocation), exist_ok=True)
 
     logging.info('Starting mem dump on PID %d...', pid)
     # iterate over regions
@@ -146,7 +148,7 @@ def openBitWardenFailSafe(maxRetries = 5):
     return
 #endregion
 
-def performTest(googleChromeCmd, nthTest):
+def performTest(googleChromeCmd, nthTest, memDumpDirectory):
     logging.info("Starting test %d.", nthTest)
 
     # Open chrome with the defined command
@@ -179,24 +181,24 @@ def performTest(googleChromeCmd, nthTest):
 
     #Type the e-mail address and replace the old one if there was
     pause()
-    pyautogui.write(configFile['DEFAULT']['username'])
+    pyautogui.write(configFile['username'])
     pyautogui.press('tab')
 
     #Perform first memory dump (control mem dump)
-    memdump(pid, nthTest, MEMDUMP_BEFORE_TYPING)
+    memdump(pid, nthTest, MEMDUMP_BEFORE_TYPING, memDumpDirectory)
     pause(1)
 
     #Password details
-    secret_password = configFile['DEFAULT']['password']
+    secret_password = configFile['password']
     firstpart, secondpart = secret_password[:len(secret_password)//2], secret_password[len(secret_password)//2:]
 
     #Write half the password first, mem-dump after
     pyautogui.write(firstpart, interval=0.15)
-    memdump(pid, nthTest, MEMDUMP_MID_TYPING_MP)
+    memdump(pid, nthTest, MEMDUMP_MID_TYPING_MP, memDumpDirectory)
 
     #Write the second half of the MP, mem-dump
     pyautogui.write(secondpart, interval=0.15)
-    memdump(pid, nthTest, MEMDUMP_FINISH_TYPING_MP)
+    memdump(pid, nthTest, MEMDUMP_FINISH_TYPING_MP, memDumpDirectory)
 
     #Perform login
     #4 tabs + enter
@@ -205,7 +207,7 @@ def performTest(googleChromeCmd, nthTest):
 
     #Perform memdump after the vault opens (Check when the options button is up)
     waitForImage(OPTIONS_BUTTON)
-    memdump(pid, nthTest, MEMDUMP_ON_UNLOCK)
+    memdump(pid, nthTest, MEMDUMP_ON_UNLOCK, memDumpDirectory)
     pause()
 
     #Simulate task
@@ -221,7 +223,7 @@ def performTest(googleChromeCmd, nthTest):
     pause(Task_time)
 
     logging.info('Simulation of task ended.')
-    memdump(pid, nthTest, MEMDUMP_ON_TASK_FINISHED)
+    memdump(pid, nthTest, MEMDUMP_ON_TASK_FINISHED, memDumpDirectory)
 
     # Locate and click the extensions icon
     waitForImageAndClick(EXTENSIONS_BUTTON)
@@ -241,7 +243,7 @@ def performTest(googleChromeCmd, nthTest):
     waitForImageAndClick(YES_BUTTON)
 
     #Mem-dump after exiting the session
-    memdump(pid, nthTest, MEMDUMP_SESSION_TERMINATED)
+    memdump(pid, nthTest, MEMDUMP_SESSION_TERMINATED, memDumpDirectory)
 
     # Close chrome
     pause(2)
@@ -256,23 +258,34 @@ monitor_size = pyautogui.size()
 
 #Config file
 configFile = configparser.ConfigParser()
+
 configFile.read('/home/vagrant/passcert/memdump-tests/config.ini')
 
-if not configFile.defaults():
+configFile = configFile['DEFAULT']
+
+if not configFile['username'] or not configFile['password']:
     sys.exit("ERROR: Please follow the instructions in the sampleconfig.ini before starting the tests")
 
+#Set up the directory for the memory dumps
+memDumpDirectory = os.getcwd()
+if not configFile['memoryDumpDirectory']:
+    logging.info('No directory set up for the memory dumps, using the current working directory instead: %s.', memDumpDirectory)
+else:
+    memDumpDirectory = configFile['memoryDumpDirectory']
+    logging.info('Memory dump directory set to: %s.', memDumpDirectory)
+    
 # Define the chrome command
 size_opts = f"--window-position=0,0 --window-size={int(monitor_size.width/2)},{monitor_size.height}"
 other_opts = "--password-store=basic"
 ext_opts = "--load-extension=/home/vagrant/passcert/bw-browser-v1.55/build"
 cmd = f"google-chrome {size_opts} {other_opts} {ext_opts}"
 
-numberOfTests = configFile['DEFAULT'].getint('numberOfTests', 0)
+numberOfTests = configFile.getint('numberOfTests', 0)
 
 logging.info("Perfoming %d tests.", numberOfTests)
 
 for i in range(numberOfTests):
-    performTest(cmd, i)
+    performTest(cmd, i, memDumpDirectory)
     logging.info("Percentage of tests completed: %f%%.", (i + 1) / numberOfTests * 100)
 
 # Print final message

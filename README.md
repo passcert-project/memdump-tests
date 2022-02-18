@@ -43,6 +43,8 @@ If the dependencies above are satisfied, follow these steps:
    - E-mail address of the BitWarden account
    - Password of the BitWarden account
    - The desired amount of tests to be performed under "numberOfTests" (default is 5 tests).
+   - (OPTIONAL) The directory where the memory dumps will be stored (if left empty, the current working directory will be used instead)
+
  7. Rename the file to "config.ini" (without quotation marks)
 
  8. From the terminal, run the following command:
