@@ -46,7 +46,6 @@ MEMDUMP_SESSION_TERMINATED = '5-session-terminated'
 
 #File locations for the Icons
 COMMAND_PROMPT = "/home/vagrant/passcert/memdump-tests/icons/Command_Prompt.png"
-BITWARDEN_PAGE_ICON = "/home/vagrant/passcert/memdump-tests/icons/BitWarden_Page_Icon.png"
 EXTENSIONS_BUTTON = "/home/vagrant/passcert/memdump-tests/icons/Extensions_Icon.png"
 BITWARDEN_BUTTON = "/home/vagrant/passcert/memdump-tests/icons/BitWarden_Icon.png"
 LOGIN_BUTTON = "/home/vagrant/passcert/memdump-tests/icons/Log_In_Button.png"
@@ -113,7 +112,6 @@ def findAndClick(imageFile, delayBeforeClicking=0):
         return False
 
 def waitForImage(imageFile, addedDelay=0):
-
     while not (location := findImage(imageFile)):
         logging.info("Waiting for image %s. Pausing for 1 second and rechecking...", os.path.basename(imageFile))
         pause()
@@ -124,6 +122,28 @@ def waitForImageAndClick(imageFile, delayBeforeClicking=0):
     while not findAndClick(imageFile, delayBeforeClicking):
         logging.info("Waiting for image %s. Pausing for 1 second and rechecking...", os.path.basename(imageFile))
         pause()
+
+#NOTE: BASICALLY CHECK FOR THE EXTENSIONS ICON FIRST AND IF THE BITWARDEN_BUTTON FAILS LIKE 5 TIMES IN A ROW AFTER, 
+#THEN THE EXTENSIONS MENU WAS PROBABLY OVERWRITTEN BY A NEW TAB OR SMTH SO REPEAT
+def openBitWardenFailSafe(maxRetries = 5):
+    waitForImageAndClick(EXTENSIONS_BUTTON)
+    
+    currRetries = 0
+    found_bitwarden = None
+
+    while currRetries < maxRetries:
+        found_bitwarden = findImage(BITWARDEN_BUTTON)
+        
+        if found_bitwarden:
+            pyautogui.click(found_bitwarden.left, found_bitwarden.top)
+            return
+
+        currRetries += 1
+        logging.info("Retrying for image %s (%d out of %d).", os.path.basename(BITWARDEN_BUTTON), currRetries, maxRetries)
+        pause()
+    else:
+        openBitWardenFailSafe()
+    return
 #endregion
 
 def performTest(googleChromeCmd, nthTest):
@@ -137,14 +157,8 @@ def performTest(googleChromeCmd, nthTest):
     pause(1)
     pyautogui.press('enter')
 
-    #Wait for the BitWarden tab to open
-    waitForImage(BITWARDEN_PAGE_ICON)
-
-    # Locate and click the extensions icon
-    waitForImageAndClick(EXTENSIONS_BUTTON)
-
-    # Select and click the bitwarden extension
-    waitForImageAndClick(BITWARDEN_BUTTON)
+    #Click the extension button and then BitWarden
+    openBitWardenFailSafe()
 
     # Select and click Login
     waitForImageAndClick(LOGIN_BUTTON)
@@ -170,7 +184,7 @@ def performTest(googleChromeCmd, nthTest):
 
     #Perform first memory dump (control mem dump)
     memdump(pid, nthTest, MEMDUMP_BEFORE_TYPING)
-    pause()
+    pause(1)
 
     #Password details
     secret_password = configFile['DEFAULT']['password']
@@ -192,7 +206,7 @@ def performTest(googleChromeCmd, nthTest):
     #Perform memdump after the vault opens (Check when the options button is up)
     waitForImage(OPTIONS_BUTTON)
     memdump(pid, nthTest, MEMDUMP_ON_UNLOCK)
-    pause(1)
+    pause()
 
     #Simulate task
     #https://player.vimeo.com/video/604015327
@@ -259,7 +273,7 @@ logging.info("Perfoming %d tests.", numberOfTests)
 
 for i in range(numberOfTests):
     performTest(cmd, i)
-    logging.info("Percentage of tests completed: %f%%.", i / numberOfTests * 100)
+    logging.info("Percentage of tests completed: %f%%.", (i + 1) / numberOfTests * 100)
 
 # Print final message
 logging.info("ALL TESTS DONE.")
