@@ -31,7 +31,6 @@ Vagrant.configure("2") do |config|
   config.vm.provision :shell, inline: "sudo apt install -y --no-install-recommends ./google-chrome-stable_current_amd64.deb"
   config.vm.provision :shell, inline: "sudo mkdir -p /home/vagrant/.config/google-chrome; sudo cp -rf /vagrant/data/google-chrome/* /home/vagrant/.config/google-chrome; chown -R vagrant.vagrant /home/vagrant/.config/google-chrome"
 
-
   # Install nodejs, npm, and gulp
   config.vm.provision :shell, inline: "curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -"
   config.vm.provision :shell, inline: "sudo apt install -y --no-install-recommends nodejs"
@@ -39,6 +38,11 @@ Vagrant.configure("2") do |config|
 
   # Create PassCert directory and install bitwarden extension (v1.55.0, 8 Dec 2021)
   config.vm.provision :shell, inline: "sudo su - vagrant; cd /home/vagrant; mkdir passcert; cd passcert; git clone https://github.com/bitwarden/browser.git --branch v1.55.0 bw-browser-v1.55; cd bw-browser-v1.55; npm install; npm run build"
+  
+  #Create directories for the PassCert BitWarden extensions
+  config.vm.provision :shell, inline: "sudo su - vagrant; cd /home/vagrant/passcert; git clone https://github.com/squeakyrino/browser.git --branch arraybuffer-experiment bw-browser-child-component; cd bw-browser-child-component; npm install; npm run build"
+  config.vm.provision :shell, inline: "sudo su - vagrant; cd /home/vagrant/passcert; git clone https://github.com/squeakyrino/browser.git --branch ArrayBuffer-No-Child-Component bw-browser-no-child-component; cd bw-browser-no-child-component; npm install; npm run build"
+  
   # Clone the memdump-tests repo
   config.vm.provision :shell, inline: "cd /home/vagrant/passcert; git clone https://github.com/passcert-project/memdump-tests"
 
