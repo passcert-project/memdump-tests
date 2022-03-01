@@ -30,9 +30,6 @@ TODO:
     - Code refactoring (make the script easier to read/go through)
     - Continue to use waitForImage for other problem areas that might manifest
     - Document new functions
-    - Switch extensions (git pull, compiliing)
-    - Results/name of extensions
-    - Config (put a directory for the results)
 '''
 
 #region Global Variables
@@ -61,15 +58,23 @@ YES_BUTTON = "/home/vagrant/passcert/memdump-tests/icons/Yes_Button.png"
 def pause(secs_to_pause=1):
     time.sleep(secs_to_pause)
 
-def memdump(pid, nthTest, iteration, dumpSaveLocation):
+def getExtensionName(extensionDir):
+    head,_ = os.path.split(extensionDir)
+    _, extensionName = os.path.split(head)
+
+    return extensionName
+
+def memdump(pid, nthTest, iteration, dumpSaveLocation, extensionName):
     # maps contains the mapping of memory of a specific project
     map_file = f"/proc/{pid}/maps"
     mem_file = f"/proc/{pid}/mem"
 
+    # output directory
+    out_dir = os.path.join(dumpSaveLocation, extensionName)
     # output file
-    out_file = os.path.join(dumpSaveLocation, f'{nthTest}-{iteration}.dump')
+    out_file = os.path.join(out_dir, f'{nthTest}-{iteration}.dump')
     #Make sure the directory exists, and if not create it
-    os.makedirs(os.path.normpath(dumpSaveLocation), exist_ok=True)
+    os.makedirs(out_dir, exist_ok=True)
 
     logging.info('Starting mem dump on PID %d...', pid)
     # iterate over regions
@@ -148,7 +153,7 @@ def openBitWardenFailSafe(maxRetries = 5):
     return
 #endregion
 
-def performTest(googleChromeCmd, nthTest, memDumpDirectory):
+def performTest(googleChromeCmd, nthTest, memDumpDirectory, extensionName):
     logging.info("Starting test %d.", nthTest)
 
     # Open chrome with the defined command
@@ -185,7 +190,7 @@ def performTest(googleChromeCmd, nthTest, memDumpDirectory):
     pyautogui.press('tab')
 
     #Perform first memory dump (control mem dump)
-    memdump(pid, nthTest, MEMDUMP_BEFORE_TYPING, memDumpDirectory)
+    memdump(pid, nthTest, MEMDUMP_BEFORE_TYPING, memDumpDirectory, extensionName)
     pause(1)
 
     #Password details
@@ -194,20 +199,19 @@ def performTest(googleChromeCmd, nthTest, memDumpDirectory):
 
     #Write half the password first, mem-dump after
     pyautogui.write(firstpart, interval=0.15)
-    memdump(pid, nthTest, MEMDUMP_MID_TYPING_MP, memDumpDirectory)
+    memdump(pid, nthTest, MEMDUMP_MID_TYPING_MP, memDumpDirectory, extensionName)
 
     #Write the second half of the MP, mem-dump
     pyautogui.write(secondpart, interval=0.15)
-    memdump(pid, nthTest, MEMDUMP_FINISH_TYPING_MP, memDumpDirectory)
+    memdump(pid, nthTest, MEMDUMP_FINISH_TYPING_MP, memDumpDirectory, extensionName)
 
     #Perform login
-    #4 tabs + enter
-    pyautogui.press('tab', presses=4, interval=0.15)
+    #NOTE: Just press enter to submit the form. This makes it universal for all scripts since the child component one does not follow the same tab order
     pyautogui.press('enter')
 
     #Perform memdump after the vault opens (Check when the options button is up)
     waitForImage(OPTIONS_BUTTON)
-    memdump(pid, nthTest, MEMDUMP_ON_UNLOCK, memDumpDirectory)
+    memdump(pid, nthTest, MEMDUMP_ON_UNLOCK, memDumpDirectory, extensionName)
     pause()
 
     #Simulate task
@@ -223,7 +227,7 @@ def performTest(googleChromeCmd, nthTest, memDumpDirectory):
     pause(Task_time)
 
     logging.info('Simulation of task ended.')
-    memdump(pid, nthTest, MEMDUMP_ON_TASK_FINISHED, memDumpDirectory)
+    memdump(pid, nthTest, MEMDUMP_ON_TASK_FINISHED, memDumpDirectory, extensionName)
 
     # Locate and click the extensions icon
     waitForImageAndClick(EXTENSIONS_BUTTON)
@@ -243,12 +247,14 @@ def performTest(googleChromeCmd, nthTest, memDumpDirectory):
     waitForImageAndClick(YES_BUTTON)
 
     #Mem-dump after exiting the session
-    memdump(pid, nthTest, MEMDUMP_SESSION_TERMINATED, memDumpDirectory)
+    memdump(pid, nthTest, MEMDUMP_SESSION_TERMINATED, memDumpDirectory, extensionName)
 
     # Close chrome
     pause(2)
     pyautogui.hotkey('alt', 'f4')
 
+if (len(sys.argv)) == 1:
+    sys.exit("ERROR: Please run the script with at least 1 extension.\nExample: python3 /home/vagrant/passcert/memdump-tests/runLinux.py /home/vagrant/passcert/bw-browser-v1.55/build/")
 
 #Set up the logger
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
@@ -273,20 +279,30 @@ if not configFile['memoryDumpDirectory']:
 else:
     memDumpDirectory = configFile['memoryDumpDirectory']
     logging.info('Memory dump directory set to: %s.', memDumpDirectory)
-    
-# Define the chrome command
-size_opts = f"--window-position=0,0 --window-size={int(monitor_size.width/2)},{monitor_size.height}"
-other_opts = "--password-store=basic"
-ext_opts = "--load-extension=/home/vagrant/passcert/bw-browser-v1.55/build"
-cmd = f"google-chrome {size_opts} {other_opts} {ext_opts}"
 
 numberOfTests = configFile.getint('numberOfTests', 0)
 
 logging.info("Perfoming %d tests.", numberOfTests)
 
-for i in range(numberOfTests):
-    performTest(cmd, i, memDumpDirectory)
-    logging.info("Percentage of tests completed: %f%%.", (i + 1) / numberOfTests * 100)
+extension_list = []
+
+for i in range(1, len(sys.argv)):
+    extension_list.append(sys.argv[i])
+
+extension_names = []
+for dir in extension_list:
+    extension_names.append(getExtensionName(os.path.normpath(dir)))
+
+for i in range(len(extension_list)):
+    # Define the chrome command
+    size_opts = f"--window-position=0,0 --window-size={int(monitor_size.width/2)},{monitor_size.height}"
+    other_opts = "--password-store=basic"
+    ext_opts = "--load-extension=" + extension_list[i]
+    cmd = f"google-chrome {size_opts} {other_opts} {ext_opts}"
+
+    for j in range(numberOfTests):
+        performTest(cmd, j, memDumpDirectory, extension_names[i])
+        logging.info("Percentage of tests completed for extension %s: %f%%.", extension_names[i], (j + 1) / numberOfTests * 100)
 
 # Print final message
 logging.info("ALL TESTS DONE.")
