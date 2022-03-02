@@ -51,7 +51,7 @@ Vagrant.configure("2") do |config|
 
   # Install python3-pip, pyautogui, and required packages
   config.vm.provision :shell, inline: "sudo apt install -y --no-install-recommends python3-pip python3-tk python3-dev scrot python3-opencv"
-  config.vm.provision :shell, inline: "sudo pip install pyautogui psutil"
+  config.vm.provision :shell, inline: "sudo pip install pyautogui psutil natsort tqdm"
 
   # Install gdb
   config.vm.provision :shell, inline: "sudo apt install -y --no-install-recommends gdb"
