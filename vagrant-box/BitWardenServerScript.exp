@@ -1,0 +1,25 @@
+#!/usr/bin/expect -f
+
+set INSTALLATION_ID [lindex $argv 0]
+set INSTALLATION_KEY [lindex $argv 1]
+
+set timeout -1
+spawn /home/vagrant/BitWardenServer/bitwarden.sh install
+match_max 100000
+expect -exact "\[0;36m(!)\[0m Enter the domain name for your Bitwarden instance (ex. bitwarden.example.com): "
+send -- "\r"
+expect -exact "\[0;36m(!)\[0m Enter the database name for your Bitwarden instance (ex. vault): "
+send -- "\r"
+expect -exact "\[39;49m\[36m(!) \[39;49mEnter your installation id (get at https://bitwarden.com/host): "
+send -- "$INSTALLATION_ID"
+expect -exact "$INSTALLATION_ID"
+send -- "\r"
+expect -exact "\[39;49m\[36m(!) \[39;49mEnter your installation key: "
+send -- "$INSTALLATION_KEY"
+expect -exact "$INSTALLATION_KEY"
+send -- "\r"
+expect -exact "\[39;49m\[36m(!) \[39;49mDo you have a SSL certificate to use? (y/n): "
+send -- "n\r"
+expect -exact "\[39;49m\[36m(!) \[39;49mDo you want to generate a self-signed SSL certificate? (y/n): "
+send -- "y\r"
+expect eof

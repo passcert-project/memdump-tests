@@ -27,6 +27,8 @@ psutil
 
 '''
 TODO:
+    - Change the chrome settings to trust locally hosted certificates by default
+    
     - Code refactoring (make the script easier to read/go through)
     - Continue to use waitForImage for other problem areas that might manifest
     - Document new functions
@@ -52,6 +54,7 @@ PLAY_BUTTON = "/home/vagrant/passcert/memdump-tests/icons/Play_Button.png"
 BITWARDEN_BLUE_BUTTON = "/home/vagrant/passcert/memdump-tests/icons/BitWarden_Icon_Logged_In.png"
 OPTIONS_BUTTON = "/home/vagrant/passcert/memdump-tests/icons/Options.png"
 YES_BUTTON = "/home/vagrant/passcert/memdump-tests/icons/Yes_Button.png"
+BITWARDEN_ENV_SETTINGS = "/home/vagrant/passcert/memdump-tests/icons/BitWarden_Env_Settings_Button.png"
 #endregion
 
 #region Functions
@@ -152,6 +155,35 @@ def openBitWardenFailSafe(maxRetries = 5):
         openBitWardenFailSafe()
     return
 #endregion
+
+def setEnvironmentURL(googleChromeCmd):
+    logging.info("Environment URL setup: Start")
+
+    # Open chrome with the defined command
+    pyautogui.hotkey('alt', 'f2')
+    waitForImage(COMMAND_PROMPT, 1)
+    #For reference: 
+    pyautogui.write(googleChromeCmd)
+    pause(1)
+    pyautogui.press('enter')
+
+    #Click the extension button and then BitWarden
+    openBitWardenFailSafe()
+
+    #Click the settings button before the log-in
+    waitForImageAndClick(BITWARDEN_ENV_SETTINGS)
+
+    #TODO: I think tabs are fine for now? Test consistency later
+    #Write localhost as the server URL
+    pyautogui.press('tab', 3, 0.15)
+    pyautogui.write("localhost")
+    pyautogui.press('enter')
+
+    #Close chrome to start the testing
+    pause(2)
+    pyautogui.hotkey('alt', 'f4')
+    logging.info("Environment URL setup: Finished")
+
 
 def performTest(googleChromeCmd, nthTest, memDumpDirectory, extensionName):
     logging.info("Starting test %d.", nthTest)
@@ -298,8 +330,19 @@ for i in range(len(extension_list)):
     size_opts = f"--window-position=0,0 --window-size={int(monitor_size.width/2)},{monitor_size.height}"
     other_opts = "--password-store=basic"
     ext_opts = "--load-extension=" + extension_list[i]
-    cmd = f"google-chrome {size_opts} {other_opts} {ext_opts}"
+    flag_opts = "--allow-insecure-localhost"
+    cmd = f"google-chrome {flag_opts} {size_opts} {other_opts} {ext_opts}"
 
+    #Clear the chrome settings first (because to set up the bitwarden local account the user probably used chrome to do)
+    #NOTE: This needs to be done because chrome randomly will either boot with *just* the extension or with the previous extension as well.
+    #Also give it some time because chrome might still be writing stuff in the folder (https://unix.stackexchange.com/questions/506319/why-am-i-getting-directory-not-empty-with-rm-rf)
+    pause(2)
+    os.system("sudo rm -rf /home/vagrant/.config/google-chrome; sudo mkdir -p /home/vagrant/.config/google-chrome; sudo cp -rf /vagrant/data/google-chrome/* /home/vagrant/.config/google-chrome; sudo chown -R vagrant.vagrant /home/vagrant/.config/google-chrome")
+
+    #Open chrome change the server to the local bitwarden server (localhost)
+    setEnvironmentURL(cmd)
+
+    #Run tests
     for j in range(numberOfTests):
         performTest(cmd, j, memDumpDirectory, extension_names[i])
         logging.info("Percentage of tests completed for extension %s: %f%%.", extension_names[i], (j + 1) / numberOfTests * 100)

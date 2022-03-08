@@ -1,3 +1,8 @@
+#TODO: Setting up the variables like this at least for now so it's possible to test on other machines
+#Might not end up like this but we shall see
+INSTALLATION_ID = ""
+INSTALLATION_KEY = ""
+
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu/focal64"
 
@@ -56,6 +61,43 @@ Vagrant.configure("2") do |config|
   # Install gdb
   config.vm.provision :shell, inline: "sudo apt install -y --no-install-recommends gdb"
 
+  # BitWarden local server
+  # Install containerd.io (necessary for Docker Engine)
+  config.vm.provision :shell, inline: "cd /home/vagrant; wget https://download.docker.com/linux/ubuntu/dists/focal/pool/stable/amd64/containerd.io_1.4.9-1_amd64.deb"
+  config.vm.provision :shell, inline: "sudo dpkg -i containerd.io_1.4.9-1_amd64.deb"
+
+  # Install Docker Engine (ce and ce-cli)
+  config.vm.provision :shell, inline: "wget https://download.docker.com/linux/ubuntu/dists/focal/pool/stable/amd64/docker-ce-cli_20.10.9~3-0~ubuntu-focal_amd64.deb"
+  config.vm.provision :shell, inline: "sudo dpkg -i docker-ce-cli_20.10.9~3-0~ubuntu-focal_amd64.deb"
+  config.vm.provision :shell, inline: "wget https://download.docker.com/linux/ubuntu/dists/focal/pool/stable/amd64/docker-ce_20.10.9~3-0~ubuntu-focal_amd64.deb"
+  config.vm.provision :shell, inline: "sudo dpkg -i docker-ce_20.10.9~3-0~ubuntu-focal_amd64.deb"
+
+  # Install Docker Compose
+  config.vm.provision :shell, inline: 'sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose'
+  config.vm.provision :shell, inline: "sudo chmod +x /usr/local/bin/docker-compose"
+
+  # Installing BitWarden local server
+  config.vm.provision :shell, inline: "sudo mkdir -p /home/vagrant/BitWardenServer; cd /home/vagrant/BitWardenServer;sudo curl -Lso bitwarden.sh https://go.btwrdn.co/bw-sh && sudo chmod 700 bitwarden.sh"
+
+  # Install expect
+  config.vm.provision :shell, inline: "sudo apt-get install -y --no-install-recommends expect"
+  
+  # Copy the expect script over to the VM
+  config.vm.provision :shell, inline: "sudo cp -rf /vagrant/BitWardenServerScript.exp /home/vagrant/BitWardenServer; sudo chown -R vagrant.vagrant /home/vagrant/BitWardenServer"
+
+  # Run the expect script provided with the id and key given
+  config.vm.provision "shell" do |s|
+    s.inline = "sudo /home/vagrant/BitWardenServer/BitWardenServerScript.exp $1 $2"
+    s.args = [INSTALLATION_ID, INSTALLATION_KEY]
+  end
+
+  # Start the BitWarden server
+  config.vm.provision :shell, inline: "sudo /home/vagrant/BitWardenServer/bitwarden.sh start"
+
+  # Tell linux to accept the stupid ass certificate since the generation is already handled by bitwarden
+  #https://bitwarden.com/help/certificates/#using-a-self-signed-certificate
+  
+  
   # Restart (Note that the syncedfolder will not be mounted)
   config.vm.provision :shell, inline: "sudo shutdown -r now"
 end

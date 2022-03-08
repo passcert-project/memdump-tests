@@ -18,8 +18,13 @@ If the dependencies above are satisfied, follow these steps:
     ```
     git clone https://github.com/passcert-project/memdump-tests.git
     ```
+ 2. Request an installation id and key from https://bitwarden.com/host/
 
- 2. At the root of your repository's copy, type:
+ 3. Edit the Vagrantfile in ./vagrant-box/ with the following information:
+   - **Installation id**
+   - **Installation key**
+
+ 4. At the root of your repository's copy, type:
 
     ```
     cd vagrant-box
@@ -28,26 +33,33 @@ If the dependencies above are satisfied, follow these steps:
 
     This step can take a while, since a new Ubuntu virtual machine will be created. At the end of this step, this command will open a new virtual machine with Ubuntu installed.
 
- 3. In the new virtual machine, login with the following credentials:
+ 5. In the new virtual machine, login with the following credentials:
 
     - **Login:** vagrant
     - **Password:** vagrant
 
- 4. Open a new terminal in the virtual machine. You can do this by pressing `ALT+F2` and writing the command `gnome-terminal`. Alternatively, you can right-click in the desktop and select the option _Open in Terminal_.
+ 6. Open a new terminal in the virtual machine. You can do this by pressing `ALT+F2` and writing the command `gnome-terminal`. Alternatively, you can right-click in the desktop and select the option _Open in Terminal_.
 
- 5. From the terminal, run the following command:
+ 7. From the terminal, run the following command:
+    ```
+    google-chrome --password-store=basic --allow-insecure-localhost "localhost"
+    ```
+    And create an account through the UI. The details of this account should be saved as they will be used later on.
+    (This account is only stored in the local BitWarden server's vault)
+
+ 8. From the terminal, run the following command:
    ```
    cd  /home/vagrant/passcert/memdump-tests/
    ```
- 6. Edit the sampleconfig.ini file with the following information:
-   - E-mail address of the BitWarden account
-   - Password of the BitWarden account
+ 9. Edit the sampleconfig.ini file with the following information:
+   - E-mail address of the BitWarden account created in step 7
+   - Password of the BitWarden account created in step 7
    - The desired amount of tests to be performed under "numberOfTests" (default is 5 tests).
    - (OPTIONAL) The directory where the memory dumps will be stored (if left empty, the current working directory will be used instead)
 
- 7. Rename the file to "config.ini" (without quotation marks)
+ 10. Rename the file to "config.ini" (without quotation marks)
 
- 8. From the terminal, run the following command:
+ 11. From the terminal, run the following command:
 
      ```
      mkdir /home/vagrant/passcert/memdump-tests/memdumps
