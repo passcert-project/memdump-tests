@@ -67,4 +67,4 @@ If the dependencies above are satisfied, follow these steps:
      python3 /home/vagrant/passcert/memdump-tests/runLinux.py /home/vagrant/passcert/bw-browser-v1.55/build/ /home/vagrant/passcert/bw-browser-child-component/build/ /home/vagrant/passcert/bw-browser-no-child-component/build/
      ```
 
-    Since this will interact with the user interface, leave it to run without interfering. Do not use your keyboard, mouse, etc. until the message `"ALL TESTS DONE."` is displayed in the terminal.
+Since this will interact with the user interface, leave it to run without interfering. Do not use your keyboard, mouse, etc. until the message `"ALL TESTS DONE."` is displayed in the terminal.
