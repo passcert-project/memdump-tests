@@ -38,7 +38,7 @@ TODO:
 #Stages of mem dumps
 MEMDUMP_BEFORE_TYPING = '0-before-typing-MP'
 MEMDUMP_MID_TYPING_MP = '1-mid-typing-MP'
-MEMDUMP_FINISH_TYPING_MP = '2-finish-typing-NP'
+MEMDUMP_FINISH_TYPING_MP = '2-finish-typing-MP'
 MEMDUMP_ON_UNLOCK = '3-on-unlock'
 MEMDUMP_ON_TASK_FINISHED = '4-on-task-finished'
 MEMDUMP_SESSION_TERMINATED = '5-session-terminated'
