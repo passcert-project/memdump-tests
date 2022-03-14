@@ -9,7 +9,10 @@ from natsort import natsorted
 from tqdm import tqdm
 
 '''
-    TODO: Password/location to save from config file
+    TODO: 
+        - Perhaps let the user choose which tests they want to make a CSV of (only 1 extension for example)?
+        - Add this to the README at some point
+        Password/location to save from config file
         Call this script from the tester script at the end maybe?
     '''
 
@@ -30,15 +33,21 @@ def filterFunc(input):
 def analyseTests(password, parent_dir):
     logging.basicConfig(level=logging.INFO)
 
-    extension_names = []
+    #Get the enconded strings for look up
+    firstpart, _ = password[:len(password)//2], password[len(password)//2:]
+    partial_utf8 = firstpart.encode()
+    partial_utf16 = firstpart.encode("utf-16-le")
+    full_utf8 = password.encode()
+    full_utf16 = password.encode("utf-16-le")
+
     #Get the subdirectories (extension names)
+    extension_names = []
     for f in os.scandir(parent_dir):
        if f.is_dir():
            extension_names.append(f.path)
     
-    all_files = []
     #For every extension, get all the files
-    for extension_name in extension_names:
+    for extension_name in extension_names:       
         files = []
         for f in os.scandir(os.path.join(parent_dir, extension_name)):
             if f.is_file() and os.path.splitext(f.name)[1] in ".dump":
@@ -50,45 +59,49 @@ def analyseTests(password, parent_dir):
         #Now group all the tests steps by their test number
         grouped_tests_paths = [list(i) for j, i in groupby(files_natsorted, filterFunc)]
         
-        #And add it to the all files, along with the extension name
-        all_files.append((os.path.split(os.path.normpath(extension_name))[1], grouped_tests_paths))
-       
-    #print(all_files)
+        #Create CSV, analyse results and write values in CSV
+        with open(os.path.join(parent_dir, f"{extension_name}-results.csv"), "w", newline='') as csv_file:
+            csv_writer = csv.writer(csv_file, csv.QUOTE_NONE)
+            #Write CSV header for excel compatibility
+            csv_writer.writerow(["sep=,"])
 
-    #Get the enconded strings for look up
-    firstpart, _ = password[:len(password)//2], password[len(password)//2:]
-    partial_utf8 = firstpart.encode()
-    partial_utf16 = firstpart.encode("utf-16-le")
-    full_utf8 = password.encode()
-    full_utf16 = password.encode("utf-16-le")
-    
-    #Create CSV, analyse results and write values in CSV
-    with open(os.path.join(parent_dir, "results.csv"), "w", newline='') as csv_file:
-        csv_writer = csv.writer(csv_file, csv.QUOTE_NONE)
-        #Write CSV header for excel compatibility
-        csv_writer.writerow(["sep=,"])
+            #TODO: Technically you only really need to do this once so move this out of the loop at some point
+            #See how many steps each test has (they should all have the same so pick the first one)
+            num_steps = len(grouped_tests_paths[0])
 
-        #Now go through all the stuff in all_files
-        for (extension_name, extension_files) in all_files:
+            CSV_Header = ["Test number"]
+            test_categories = ["Partial UTF-8", "Partial UTF-16", "Full UTF-8", "Full UTF-16"]
+
+            #Group per test step, not by category since it's easier to look at the results and write them in.
+            for step in range(num_steps):
+                for category in test_categories:
+                    CSV_Header.append(category + f" Step {step}") 
+            
+            #Write the column titles
+            csv_writer.writerow(CSV_Header)
+
+            #Now analyse the files
+            test_number = 0
             logging.info("Processing tests from extension %s", extension_name)
-            csv_writer.writerow([f"Extension Name: {extension_name}"])
-            #The files were sorted previously and according to the filename created by the program this solution is fine as they should be sorted by test-step
-            test_num = 0
-            for test in tqdm(extension_files):
-                csv_writer.writerow([f"Test {test_num}. Steps", "Partial UTF-8", "Partial UTF-16", "Full UTF-8", "Full UTF-16"])
-                step_num = 0
+            for test in tqdm(grouped_tests_paths):
+                row_data = [test_number]
 
+                #For each step
                 for step_file in tqdm(test, leave=False):
                     #Open the test step file and read the lines
                     with open(step_file, "rb") as dump_file:
                         #Analyse the results
                         dump_file_lines = dump_file.read()
                         (p8, p16, f8, f16) = processDumpFile(dump_file_lines, partial_utf8, partial_utf16, full_utf8, full_utf16)
+                        row_data.extend([p8, p16, f8, f16])
 
-                        csv_writer.writerow([step_num, p8, p16, f8, f16])
-                        step_num += 1                       
-                test_num += 1
-                #logging.info("Percentage of tests completed for extension %s: %f%%.", extension_name, test_num / total_tests * 100)                
+                #Once all the steps are done, write the info in the csv :)
+                csv_writer.writerow(row_data)
+
+                #Prepare for next test
+                row_data.clear()
+                test_number += 1
+
     return
 
 if __name__=="__main__":
