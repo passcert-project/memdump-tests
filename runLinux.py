@@ -8,30 +8,12 @@ import re
 import configparser
 
 '''
-Before typing MP - Done
-Mid typing Master Password - Done
-After finishing typing MP - Done
-After unlocking - Done
-After task
-After terminating the session - Done
-'''
-
-'''
 Dependencies (so far)
 python
 pyautogui
 pillow
 opencv
 psutil
-'''
-
-'''
-TODO:
-    - Change the chrome settings to trust locally hosted certificates by default
-    
-    - Code refactoring (make the script easier to read/go through)
-    - Continue to use waitForImage for other problem areas that might manifest
-    - Document new functions
 '''
 
 #region Global Variables
@@ -55,10 +37,16 @@ BITWARDEN_BLUE_BUTTON = "/home/vagrant/passcert/memdump-tests/icons/BitWarden_Ic
 OPTIONS_BUTTON = "/home/vagrant/passcert/memdump-tests/icons/Options.png"
 YES_BUTTON = "/home/vagrant/passcert/memdump-tests/icons/Yes_Button.png"
 BITWARDEN_ENV_SETTINGS = "/home/vagrant/passcert/memdump-tests/icons/BitWarden_Env_Settings_Button.png"
+
+#Task time
+TASK_TIME = 60
 #endregion
 
 #region Functions
 def pause(secs_to_pause=1):
+    """Pauses the script for secs_to_pause seconds. 
+    """
+
     time.sleep(secs_to_pause)
 
 def getExtensionName(extensionDir):
@@ -98,21 +86,34 @@ def memdump(pid, nthTest, iteration, dumpSaveLocation, extensionName):
     logging.info('Memory dump saved to %s', out_file)
 
 def findImage(imageFile):
-    try:
-        buttonLocation = pyautogui.locateOnScreen(imageFile, confidence=0.9)
+    """Scans the screen to find a section equal to the imageFile. Returns a box with the position of the match in screen coordinates if successful,
+    None otherwise.
 
-        if not buttonLocation:
+    The function matches a section of the screen if 90% of its' pixels match the given imageFile.
+    """
+
+    try:
+        match = pyautogui.locateOnScreen(imageFile, confidence=0.9)
+
+        if not match:
             logging.info("Image %s not found.", os.path.basename(imageFile))
-            return buttonLocation
+            return match
         else:
-            logging.info('Image %s found at x=%d, y=%d.', os.path.basename(imageFile), buttonLocation.left, buttonLocation.top)
-            return buttonLocation
+            logging.info('Image %s found at x=%d, y=%d.', os.path.basename(imageFile), match.left, match.top)
+            return match
     except pyautogui.ImageNotFoundException:
         #NOTE: Even though the documentation says locateOnScreen should send this exception, I've never actually seen it raise it. Still, for precaution
         logging.info("Image %s not found.", os.path.basename(imageFile))
         return None
 
 def findAndClick(imageFile, delayBeforeClicking=0):
+    """Scans the screen to find a section equal to the imageFile and clicks the center of the section if found, after the specified delay in seconds
+    (by default it has no delay).
+    Returns True if the image was located and clicked, False otherwise.
+
+    The function matches a section of the screen if 90% of its' pixels match the given imageFile.
+    """
+
     buttonLocation = findImage(imageFile)
     if buttonLocation != None:
         pause(delayBeforeClicking)
@@ -122,6 +123,13 @@ def findAndClick(imageFile, delayBeforeClicking=0):
         return False
 
 def waitForImage(imageFile, addedDelay=0):
+    """Continously scans the screen every second to find a section equal to the imageFile until a match is found 
+    and then pauses for the specified time in addedDelay.
+    Returns a box with the position of the match in screen coordinates.
+
+    This function can loop forever if a match is never found.
+    """
+
     while not (location := findImage(imageFile)):
         logging.info("Waiting for image %s. Pausing for 1 second and rechecking...", os.path.basename(imageFile))
         pause()
@@ -129,13 +137,25 @@ def waitForImage(imageFile, addedDelay=0):
     return location
 
 def waitForImageAndClick(imageFile, delayBeforeClicking=0):
+    """Continously scans the screen every second to find a section equal to the imageFile until a match is found 
+    and then clicks the center of the section after the specified delayBeforeClicking.
+
+    This function can loop forever if a match is never found.
+    """
+
     while not findAndClick(imageFile, delayBeforeClicking):
         logging.info("Waiting for image %s. Pausing for 1 second and rechecking...", os.path.basename(imageFile))
         pause()
 
-#NOTE: BASICALLY CHECK FOR THE EXTENSIONS ICON FIRST AND IF THE BITWARDEN_BUTTON FAILS LIKE 5 TIMES IN A ROW AFTER, 
-#THEN THE EXTENSIONS MENU WAS PROBABLY OVERWRITTEN BY A NEW TAB OR SMTH SO REPEAT
 def openBitWardenFailSafe(maxRetries = 5):
+    """This functions opens the main BitWarden extension window, even if the extension window gets closed by some interruption (new tab opened, etc...).
+    The function retries up to maxRetries to open the BitWarden extension and if it fails, it clicks on the extension button again and retries until
+    BitWarden is open.
+
+    Necessary because BitWarden opens a new tab to congratulate us for installing it and depending on the timing can cancel the extension window,
+    so this approach is easier and more consistent.
+    """
+
     waitForImageAndClick(EXTENSIONS_BUTTON)
     
     currRetries = 0
@@ -157,6 +177,13 @@ def openBitWardenFailSafe(maxRetries = 5):
 #endregion
 
 def setEnvironmentURL(googleChromeCmd):
+    """This function will properly set BitWarden's environment URL to point to the local BitWarden server. Opens Chrome with the given googleChromeCmd.
+
+    This function closes Chrome at the end. Why? Because if we do not close Chrome after setting the env URL, there will be 4-5 different processes with
+    the BitWarden tag sleeping and closing Chrome fixes that issue. We only want 1 BitWarden process so we know which one to memdump. As to why this happens?
+    No clue really :(
+    """
+
     logging.info("Environment URL setup: Start")
 
     # Open chrome with the defined command
@@ -167,13 +194,11 @@ def setEnvironmentURL(googleChromeCmd):
     pause(1)
     pyautogui.press('enter')
 
-    #Click the extension button and then BitWarden
     openBitWardenFailSafe()
 
     #Click the settings button before the log-in
     waitForImageAndClick(BITWARDEN_ENV_SETTINGS)
 
-    #TODO: I think tabs are fine for now? Test consistency later
     #Write localhost as the server URL
     pyautogui.press('tab', 3, 0.15)
     pyautogui.write("localhost")
@@ -184,8 +209,14 @@ def setEnvironmentURL(googleChromeCmd):
     pyautogui.hotkey('alt', 'f4')
     logging.info("Environment URL setup: Finished")
 
-
 def performTest(googleChromeCmd, nthTest, memDumpDirectory, extensionName):
+    """This function performs an entire test.
+    googleChromeCmd: the command to open up Google Chrome
+    nthTest: the number of the current test
+    memDumpDirectory: where should the memory dumps be stored
+    extensionName: the current extension name being tested
+    """
+    
     logging.info("Starting test %d.", nthTest)
 
     # Open chrome with the defined command
@@ -205,13 +236,13 @@ def performTest(googleChromeCmd, nthTest, memDumpDirectory, extensionName):
     # Get PID of Bitwarden browser extension
     chrome_extensions = [proc for proc in psutil.process_iter() if proc.name() == 'chrome' and ('--extension-process' in proc.cmdline())]
     if len(chrome_extensions) != 1:
+        print(chrome_extensions)
         sys.exit("ERROR: Could not get PID of Bitwarden Chrome extension")
 
     pid = chrome_extensions[0].pid
     logging.info('PID of Bitwarden Chrome extension: %d', pid)
 
     #E-mail
-    #TODO: This works but check if there's issues depending on screen size
     email_text = waitForImage(E_MAIL_TEXT)
     pyautogui.click(email_text.left, email_text.top + 10)
     pyautogui.hotkey('ctrl', 'a')
@@ -253,10 +284,9 @@ def performTest(googleChromeCmd, nthTest, memDumpDirectory, extensionName):
     pyautogui.write('https://player.vimeo.com/video/604015327')
     pyautogui.press('enter')
     waitForImageAndClick(PLAY_BUTTON, 1)
-    logging.info('Playing video for 60 seconds.')
+    logging.info('Playing video for %d seconds.', TASK_TIME)
 
-    Task_time = 60
-    pause(Task_time)
+    pause(TASK_TIME)
 
     logging.info('Simulation of task ended.')
     memdump(pid, nthTest, MEMDUMP_ON_TASK_FINISHED, memDumpDirectory, extensionName)
@@ -332,18 +362,18 @@ for i in range(len(extension_list)):
     ext_opts = "--load-extension=" + extension_list[i]
     flag_opts = "--allow-insecure-localhost"
     cmd = f"google-chrome {flag_opts} {size_opts} {other_opts} {ext_opts}"
-
-    #Clear the chrome settings first (because to set up the bitwarden local account the user probably used chrome to do)
-    #NOTE: This needs to be done because chrome randomly will either boot with *just* the extension or with the previous extension as well.
-    #Also give it some time because chrome might still be writing stuff in the folder (https://unix.stackexchange.com/questions/506319/why-am-i-getting-directory-not-empty-with-rm-rf)
-    pause(2)
-    os.system("sudo rm -rf /home/vagrant/.config/google-chrome; sudo mkdir -p /home/vagrant/.config/google-chrome; sudo cp -rf /vagrant/data/google-chrome/* /home/vagrant/.config/google-chrome; sudo chown -R vagrant.vagrant /home/vagrant/.config/google-chrome")
-
-    #Open chrome change the server to the local bitwarden server (localhost)
-    setEnvironmentURL(cmd)
-
+    
     #Run tests
     for j in range(numberOfTests):
+
+        #NOTE: Reset Chrome settings to avoid a) loading with more than 1 extension and b) Chrome might randomly disable the extension because it deems it "unsafe"
+        #Also give it some time because chrome might still be writing stuff in the folder (https://unix.stackexchange.com/questions/506319/why-am-i-getting-directory-not-empty-with-rm-rf)
+        pause(2)
+        os.system("sudo rm -rf /home/vagrant/.config/google-chrome; sudo mkdir -p /home/vagrant/.config/google-chrome; sudo cp -rf /vagrant/data/google-chrome/* /home/vagrant/.config/google-chrome; sudo chown -R vagrant.vagrant /home/vagrant/.config/google-chrome")
+        pause(2)
+
+        setEnvironmentURL(cmd)
+
         performTest(cmd, j, memDumpDirectory, extension_names[i])
         logging.info("Percentage of tests completed for extension %s: %f%%.", extension_names[i], (j + 1) / numberOfTests * 100)
 

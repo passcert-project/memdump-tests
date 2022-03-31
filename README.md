@@ -20,7 +20,7 @@ If the dependencies above are satisfied, follow these steps:
     ```
  2. Request an installation id and key from https://bitwarden.com/host/
 
- 3. Edit the Vagrantfile in ./vagrant-box/ with the following information:
+ 3. Edit the Vagrantfile in ./vagrant-box/ with the following information at the top of the file:
    - **Installation id**
    - **Installation key**
 
