@@ -4,14 +4,12 @@ import logging
 import os
 import re
 import sys
-import time
 from natsort import natsorted
 from tqdm import tqdm
 
 '''
     TODO: 
         - Perhaps let the user choose which tests they want to make a CSV of (only 1 extension for example)?
-        - Add this to the README at some point
         Password/location to save from config file
         Call this script from the tester script at the end maybe?
     '''
@@ -106,6 +104,7 @@ def analyseTests(password, parent_dir):
 
 if __name__=="__main__":
 
-    time_begin = time.time()
+    if (len(sys.argv)) < 3:
+        sys.exit("Usage: <password> <dir>\npassword: the password to look for\ndir: the directory of the memory dumps")
+
     analyseTests(sys.argv[1], sys.argv[2])
-    print("CSV generated in ", time.time() - time_begin, " seconds")

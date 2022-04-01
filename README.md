@@ -68,3 +68,17 @@ If the dependencies above are satisfied, follow these steps:
      ```
 
 Since this will interact with the user interface, leave it to run without interfering. Do not use your keyboard, mouse, etc. until the message `"ALL TESTS DONE."` is displayed in the terminal.
+
+## Analysing the memory dumps
+### Steps
+ After the conclusion of the steps, a CSV file with statistics can be made by following these steps:
+
+  1. Open a new terminal.
+
+  2. From the terminal, run the following commmand providing the same password used for the tests:
+  ```
+  python3 /home/vagrant/passcert/memdump-tests/memoryDumpAnalyser.py <password> /home/vagrant/passcert/memdump-tests/memdumps
+  ```
+  If a different directory for the memory dumps was specified through the config file, replace the directory above with the one in the config file.
+
+  3. The generated CSV files will be placed in the same directory as the memory dumps.
