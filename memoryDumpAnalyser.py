@@ -24,7 +24,7 @@ def processDumpFile(file, partial_utf8_string, partial_utf16_string, full_utf8, 
     with open(file, "rb") as dump_file:
         #Analyse the results
         dump_file_lines = dump_file.read()
-        n1, n2, n3, n4 = dump_file_lines.count(partial_utf8_string), file.count(partial_utf16_string), file.count(full_utf8), file.count(full_utf16)
+        n1, n2, n3, n4 = dump_file_lines.count(partial_utf8_string), dump_file_lines.count(partial_utf16_string), dump_file_lines.count(full_utf8), dump_file_lines.count(full_utf16)
         
         #The partial string will match with the full string as well, so remove those from the count
         partial_utf8_count = n1 - n3
